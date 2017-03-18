@@ -72,20 +72,20 @@ if (isset($_GET['lang'])) {
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li><a href="">Home</a></li>
-            <li><a href="<?php echo($language->url); ?>apresentacao.html">Apresentação</a></li>
+            <li><a href="<?php echo($language->url()); ?>apresentacao.html">Apresentação</a></li>
              <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Serviços <span class="caret"></span></a>
               <ul class="dropdown-menu">
-                <li><a href="news-list.html">Arrendamento do salão</a></li>
-                <li><a href="news-detail.html">Arrendamento casa rural</a></li>
-                <li><a href="shop-list.html">Catering</a></li>
+                <li><a href="arrendamento-salao.html">Arrendamento do salão</a></li>
+                <li><a href="arrendamento-rural.html">Arrendamento casa rural</a></li>
+                <li><a href="catering.html">Catering</a></li>
               </ul>
             </li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="<?php echo($language->url); ?>galeria.html">Galeria</a></li>
-            <li><a href="<?php echo($language->url); ?>casas.html">Casas</a></li>
-            <li><a href="<?php echo($language->url); ?>contactos.html">Contatos</a></li>
+            <li><a href="<?php echo($language->url()); ?>galeria.html">Galeria</a></li>
+            <li><a href="<?php echo($language->url()); ?>casas.html">Casas</a></li>
+            <li><a href="<?php echo($language->url()); ?>contactos.html">Contatos</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div><!--/.container -->
@@ -93,11 +93,13 @@ if (isset($_GET['lang'])) {
     
      <!-- :::::::::::::::::::::::::::::::::::: SNIPPETS ::::::::::::::::::::::::::::::::::::::: -->
             <?php
-            if ($this->url() == BASE_URL . $language->url ) {
+            if ($this->url() == BASE_URL . $language->url() ) {
                     $this->includeSnippet('home');
             } else { 
                 if ($this->slug() == "apresentacao") {
                     $this->includeSnippet('apresentacao');
+                }else if ($this->slug() != null && $this->parent->slug() != null && $this->parent->slug() == "servicos") {
+                    $this->includeSnippet('servicos');
                 } else if ($this->slug() == "galeria") {
                     $this->includeSnippet('galeria');
                 } else if ($this->slug() == "contactos") {
@@ -105,7 +107,7 @@ if (isset($_GET['lang'])) {
                 } else if ($this->slug() == "404") {
                     $this->includeSnippet('404');
                 } else {
-                   header('Location: ' . BASE_URL . $language->url . 'funcionalidades/404');
+                   header('Location: ' . BASE_URL . $language->url() . 'funcionalidades/404');
                 }
             }
             ?>

@@ -104,7 +104,9 @@ class Page {
     }
 
     public function title($lang = true) {
-        if ($this->lang == '' && $lang)
+        if(!$lang) 
+            return $this->title;
+        else if ($this->lang == '' && $lang)
             return $this->title;
         else {
             return ($this->content('titulo'));
@@ -156,7 +158,7 @@ class Page {
     }
 
     public function url() {
-        $url = BASE_URL.Language::getInstance()->url . $this->url . ($this->url != '' ? URL_SUFFIX : '');
+        $url = BASE_URL.Language::getInstance()->url() . $this->url . ($this->url != '' ? URL_SUFFIX : '');
         //return BASE_URL. $this->url . ($this->url != '' ? URL_SUFFIX : '');
         return($url);
     }

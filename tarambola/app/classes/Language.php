@@ -13,7 +13,7 @@ class Language
 {
     public $langs = array();
     public $lang;
-    public $url;
+    public $urlLang;
     
     private static $instance;
 
@@ -50,9 +50,9 @@ class Language
             $this->lang='';
         }
         
-        $this->url = $this->lang.'/';
+        $this->urlLang = $this->lang.'/';
         if($this->lang == '')
-            $this->url = 'pt/';
+            $this->urlLang = 'pt/';
     }
     private function __clone()
     {
@@ -84,9 +84,9 @@ class Language
             $_SESSION['tara_lang']= $this->lang;
             setcookie('tara_lang', $this->lang, time() + (3600 * 24 * 30));
         }
-        $this->url = $this->lang.'/';
+        $this->urlLang = $this->lang.'/';
         if($this->lang == '')
-            $this->url = 'pt/';
+            $this->urlLang = 'pt/';
            
     }
     public function printLangLink($lang, $class, $title, $label, $url)
@@ -99,6 +99,9 @@ class Language
     {
         unset($_SESSION['tara_lang']);
         setcookie('tara_lang');
+    }
+    public function url() {
+        return $this->urlLang;
     }
 }
 ?>
