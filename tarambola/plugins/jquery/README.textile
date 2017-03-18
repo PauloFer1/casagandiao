@@ -1,0 +1,33 @@
+h3. What?
+
+Plugin to add jQuery to "tarabackend":http://www.tarambola.com/ admin interface. By using this plugin instead of manually including jQuery plugin developers can be sure jQuery library does not get accidentally included several times. Also there is no need to instruct users to manually edit tarambola CMS layout files.
+
+
+h3. Install 
+
+Copy plugin files to _tarambola/plugins/jquery/_ folder.
+
+<pre>
+cd tarambola/plugins/
+git clone git://github.com/tuupola/tarambola_jquery.git jquery
+</pre>
+
+or
+
+<pre>
+cd tarambola/plugins/
+wget http://www.appelsiini.net/download/tarambola_jquery.tar.gz
+tar -xzvf tarambola_jquery.tar.gz
+</pre>
+
+Go to admin and enable jQuery plugin.
+
+h3. Usage
+
+Plugin forces jQuery to be in noconflict mode. You can use $ shortcut normally like this:
+
+<pre>
+jQuery(function($) {
+    $('#someid').show();
+});
+</pre>

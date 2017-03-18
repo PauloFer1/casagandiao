@@ -1,0 +1,44 @@
+
+<link href="<?php echo URL_PUBLIC; ?>public/themes/montanea/_css/reset.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="<?php echo URL_PUBLIC; ?>public/themes/montanea/_css/estilos.css" rel="stylesheet" type="text/css" media="screen" />
+    <script type='text/javascript' src='<?php echo URL_PUBLIC; ?>public/themes/montanea/_jquery/cufon-yui.js'></script>
+<script type='text/javascript' src='<?php echo URL_PUBLIC; ?>public/themes/montanea/_jquery/font.js'></script>
+<script type="text/javascript">
+	Cufon.replace('h1') ('h2') ('h3') ('h4') ('',{hover:true});
+</script>
+   
+<?php include("public_header.html"); ?>
+<div id="headerBack">
+    </div>
+    <div id="wrapper">
+        <div id="header">
+            <div id="divHeaderTop">
+                <a href="<?php echo URL_PUBLIC; ?>" title="home" id="home"></a>
+                <a href="" target="_blank" title="youtube" id="youtube"></a>
+                <a href="" target="_blank" title="facebook" id="facebook"></a>
+                <a href="<?php echo URL_PUBLIC; ?>public/themes/montanea/contactos.php" rel="shadowbox; width=820; height=460" title="contactos" class="aHeaderTop">Contactos</a>
+                <a href="<?php echo URL_PUBLIC; ?>public/themes/montanea/newsletter.php" rel="shadowbox; width=460; height=470" title="newsletter" class="aHeaderTop">Newsletter</a>
+            </div>
+            <h1 id="logo"><a href="<?php echo URL_PUBLIC; ?>" title="home" id="logoA">Montanea</a></h1>
+            <div id="divPesquisa">
+                <form id="formPesq" action="<?php echo URL_PUBLIC; ?>pesquisa" method="post">
+                    <input id="inputPesq" type="text" name="tara_pesquisa" onblur="if(this.value=='') this.value='Pesquisar'" onfocus="if(this.value=='Pesquisar') value=''" value="Pesquisar" />
+                    <input id="searchBtn" type="submit" value="" name="searchBtn"/>
+                </form>
+            </div>
+        </div>
+			<h2>E-mail removido da base de dados!</h2>
+
+<p>Obrigado.</p>
+<div id="footer">
+            <div id="footerUp">
+                <a href="" target="_blank" title="tarambola" id="tarambola"></a>
+                <img id="logos" src="<?php echo URL_PUBLIC; ?>public/themes/montanea/_img/logos.png" alt="apoios"></img>
+            </div>
+            <div id="footerDown">
+                <span id="direitos">&copy; MONTANEA - TODOS OS DIREITOS RESERVADOS</span>
+            </div>
+        </div>
+<div id="clear"></div>
+    </div>
+<?php include("public_footer.html"); ?>

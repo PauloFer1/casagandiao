@@ -1,0 +1,44 @@
+<div>
+    
+//********************** CREATE PAYMENT ***********************//
+        //IMPORTAR LIBRARIA
+        require SERVER_URL.'tarambola/app/shoppingcart/paypal/CreatePayment.php';
+        
+        //Instanciar Objecto
+        //Params:
+        //método, descrição
+        $create = new CreatePayment("paypal", "Descrição teste de um pagamento!");
+        
+        //Adicionar Itens
+        //Params:
+        //Nome, Quantidade, Valor
+        $create->addItem('Produto teste 1', 1, '5.00');
+        $create->addItem('Produto teste 2', 1, '2.00');
+        
+        //Colocar os detalhes
+        //Params:
+        //shipping, tax, sub-total, fee
+        $create->setDetails('1.00', '0.00', '7.00');
+        
+        //Colocar preço final
+        $create->setAmount('9.00');
+    
+        Colocar URLs sucesso e cancelamento
+        $create->setRedirect("http://taraserver.no-ip.org/funcionalidades/sucessshop.html", "http://taraserver.no-ip.org/funcionalidades/cancelshop.html");
+
+        Executar a criação de pagamento
+        $create->prepareAndExecute();
+        
+//********************** CREATE PAYMENT ***********************//
+
+        //IMPORTAR LIBRARIAS
+        require SERVER_URL.'tarambola/app/shoppingcart/paypal/ExecPayment.php';
+
+        //INSTANCIAR EXECUÇÃO
+        $exec = new ExecPayment();
+        //EXECUTAR
+        $exec->execute();
+        //TRACE PARA DEBUG
+        $exec->trace();
+
+</div>

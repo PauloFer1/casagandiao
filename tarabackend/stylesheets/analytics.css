@@ -1,0 +1,22 @@
+
+#ga-table > li {
+  list-style-type: none;
+  overflow: hidden;
+}
+#ga-table > li > * {
+  display: block;
+  float: left;
+  margin: 0;
+  padding: 5px;
+}
+
+.c1, .c2 {
+  width: 90px;
+}
+input {
+  display: block;
+}
+.note {
+  margin-left: 10px !important;
+  color: #777;
+}

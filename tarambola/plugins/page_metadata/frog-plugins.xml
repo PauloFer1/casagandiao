@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tarambola-plugins>
+  <tarambola-plugin>
+      <id>page_metadata</id>
+      <version>1.0.1</version>
+      <status>final</status>
+  </tarambola-plugin>
+</tarambola-plugins>

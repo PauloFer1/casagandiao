@@ -1,0 +1,56 @@
+@font-face {
+	font-family: "Flaticon";
+	src: url("flaticon.eot");
+	src: url("flaticon.eot#iefix") format("embedded-opentype"),
+	url("flaticon.woff") format("woff"),
+	url("flaticon.ttf") format("truetype"),
+	url("flaticon.svg") format("svg");
+	font-weight: normal;
+	font-style: normal;
+}
+[class^="flaticon-"]:before, [class*=" flaticon-"]:before,
+[class^="flaticon-"]:after, [class*=" flaticon-"]:after {   
+	font-family: Flaticon;
+	font-style: normal;
+}.flaticon-avatar83:before {
+	content: "\e000";
+}
+.flaticon-calendar-icons:before {
+	content: "\e001";
+}
+.flaticon-clock104:before {
+	content: "\e002";
+}
+.flaticon-ice51:before {
+	content: "\e003";
+}
+.flaticon-left197:before {
+	content: "\e004";
+}
+.flaticon-location76:before {
+	content: "\e005";
+}
+.flaticon-lunch9:before {
+	content: "\e006";
+}
+.flaticon-margarita:before {
+	content: "\e007";
+}
+.flaticon-new100:before {
+	content: "\e008";
+}
+.flaticon-restaurant14:before {
+	content: "\e009";
+}
+.flaticon-restaurant3:before {
+	content: "\e00a";
+}
+.flaticon-telephone60:before {
+	content: "\e00b";
+}
+.flaticon-tool520:before {
+	content: "\e00c";
+}
+.flaticon-wine70:before {
+	content: "\e00d";
+}

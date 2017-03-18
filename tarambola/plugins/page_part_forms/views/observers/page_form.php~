@@ -1,0 +1,741 @@
+<?php 
+// Javascript is used to remove the existing page_parts interface provided by the frog core.
+$replace_with_id = $css_id_prefix . "Form";
+?>
+<script type="text/javascript">
+    //<![CDATA[
+    var multiple_content = new Array();
+    var editor_filters = new Array();
+
+    (function($) {
+        // Document load
+if($.browser.msie)
+{
+	document.ondragstart = function() {
+	window.event.dataTransfer.effectAllowed = "copyLink";
+	}
+}
+        $(function() {
+            // Replace the existing page_part editors with the page_part_forms editors.
+            $('#tab-control').replaceWith(
+            $('#<?php echo $replace_with_id; ?>').remove() // jQuery copies the nodes, so delete the origin
+
+        );
+
+            // Apply the text filters
+            $.each(editor_filters, function(index, item) {
+                setTextAreaToolbar(item["textarea"], item["filter"]);
+            });
+
+            // Add a handler to the form submission to prepare the page_parts (e.g. multiple values and limit check)
+            $form = $('form:first'); // XXX: this is fragile!
+
+            $form.submit(function() {
+                submit_form = true;
+
+                // Walk through all definitions
+                $.each(multiple_content, function(index, item) {
+                    // Collect the selected values from checkboxes or lists that have multiple contents
+                    values = new Array();
+
+                    $('input[name="<?php echo $plugin_id; ?>_values_for_' + item["name"] + '"]:checked,'+
+                        'select[name="<?php echo $plugin_id; ?>_values_for_' + item["name"] + '"] option:selected', $form).each(function() {
+                        values.push( $(this).val() );
+                    });
+
+                    // Check if the limit is reached
+                    if (values.length <= item["limit"]) {
+                        // Encode the values as JSON string and set it as content
+                        $('textarea[name="' + item["content"] + '"]', $form).val( $.json.encode(values) );
+                    }
+                    else {
+                        // I18n in javascript by replacing placeholders
+                        alert(
+                        '<?php echo __('Too many options are selected for "##TITLE##". Currently there are "##SELECTED##" selected, but only "##LIMIT##" are allowed.'); ?>'
+                        .replace("##TITLE##", item["title"])
+                        .replace("##SELECTED##", values.length)
+                        .replace("##LIMIT##", item["limit"])
+                    );
+
+                        // Do not submit the form
+                        submit_form = false;
+                        // This stops only the current loop, not the submission of the form
+                        return false;
+                    }
+                });
+
+                return submit_form;
+            });
+        });
+    })(jQuery);
+    //]]>
+</script>
+
+
+<div id="<?php echo $replace_with_id; ?>">
+    <?php
+    //função para dividir o texto (caminho das imagens), para aparecerem no fieldset
+    function apply($text, $name) {
+        $result = "<ul class ='imgs'>";
+        $temp = explode(URL_PUBLIC, $text);
+        foreach ($temp as $img) {
+            if($img!="") {
+                $temp3 = preg_split("/\.([^\.]+)$/", $img);
+                preg_match("/\.([^\.]+)$/", $img, $temp2);
+                $result.="<li class='imgCont' style='float:left; margin-left:5px' id='".URL_PUBLIC.$img."'>
+                        <a href='".URL_PUBLIC.$temp3[0].$temp2[0]."'><img src='".URL_PUBLIC.$temp3[0].".64c".$temp2[0]."' class='imgTh'/></a>
+                        <input class='deleteBtn' type='button' onclick=\"deleteImg('".URL_PUBLIC.$img."', '".$name."')\" value='X' title='Apagar'/>
+                    </li>";
+            }
+        }
+        $result.="</ul>";
+        return $result;
+    }
+
+    function getIcon($extension)
+    {
+            switch (strtolower($extension)) {
+                case '.pdf':
+                    $retval = 'images/pdf.png';
+                    break;
+                case '.mpg':
+                case '.mov':
+                case '.avi':
+                case '.swf':
+                case '.flv':
+                    $retval = 'images/video.png';
+                    break;
+                case '.mp2':
+                case '.mp3':
+                case '.mpga':
+                case '. wav':
+                    $retval = 'images/audio.png';
+                    break;
+                default:
+                    $retval = 'images/doc.png';
+                    break;
+            }
+            return '../frog/plugins/assets/' . $retval;
+      }
+
+     function applyFile($text, $name) {
+        $result = "<ul class ='files'>";
+        $temp = explode(URL_PUBLIC, $text);
+        foreach ($temp as $img) {
+            if($img!="") {
+                $temp3 = preg_split("/\.([^\.]+)$/", $img);
+                preg_match("/\.([^\.]+)$/", $img, $temp2);
+
+                $result.="<li class='imgCont' style='float:left; margin-left:5px' id='".URL_PUBLIC.$img."'>
+                        <img src='".getIcon($temp2[0])."' class='imgTh'/>
+                        <input class='deleteBtn' type='button' onclick=\"deleteImg('".URL_PUBLIC.$img."', '".$name."')\" value='X' title='Apagar'/>
+                    </li>";
+            }
+        }
+        $result.="</ul>";
+        return $result;
+    }
+
+
+    //função para buscar grupos de downloads para popular combobox
+    //---------funçoes para finds------
+    function explode_uri($uri)
+{
+    return preg_split('/\//', $uri, -1, PREG_SPLIT_NO_EMPTY);
+}
+
+function find_page_by_uri($uri)
+{
+    global $__FROG_CONN__;
+
+    $uri = trim($uri, '/');
+
+    $has_behavior = false;
+
+    // adding the home root
+    $urls = array_merge(array(''), explode_uri($uri));
+    $url = '';
+
+    $page = new stdClass;
+    $page->id = 0;
+
+    $parent = false;
+
+    foreach ($urls as $page_slug)
+    {
+        $url = ltrim($url . '/' . $page_slug, '/');
+
+        if ($page = find_page_by_slug($page_slug, $parent))
+        {
+            // check for behavior
+            if ($page->behavior_id != '')
+            {
+                // add a instance of the behavior with the name of the behavior
+                $params = explode_uri(substr($uri, strlen($url)));
+                $page->{$page->behavior_id} = Behavior::load($page->behavior_id, $page, $params);
+
+                return $page;
+            }
+        }
+        else
+        {
+            break;
+        }
+
+        $parent = $page;
+
+    } // foreach
+
+    return ( ! $page && $has_behavior) ? $parent: $page;
+} // find_page_by_slug
+
+function find_page_by_slug($slug, &$parent)
+{
+    global $__FROG_CONN__;
+
+    $page_class = 'Page_Plug';
+
+    $parent_id = $parent ? $parent->id: 0;
+
+    $sql = 'SELECT page.*, author.name AS author, updator.name AS updator '
+         . 'FROM '.TABLE_PREFIX.'page AS page '
+         . 'LEFT JOIN '.TABLE_PREFIX.'user AS author ON author.id = page.created_by_id '
+         . 'LEFT JOIN '.TABLE_PREFIX.'user AS updator ON updator.id = page.updated_by_id '
+         . 'WHERE slug = ? AND parent_id = ? AND (status_id='.Page_Plug::STATUS_REVIEWED.' OR status_id='.Page_Plug::STATUS_PUBLISHED.' OR status_id='.Page_Plug::STATUS_HIDDEN.')';
+
+    $stmt = $__FROG_CONN__->prepare($sql);
+
+    $stmt->execute(array($slug, $parent_id));
+
+    if ($page = $stmt->fetchObject())
+    {
+        // hook to be able to redefine the page class with behavior
+        if ( ! empty($parent->behavior_id))
+        {
+            // will return Page by default (if not found!)
+            $page_class = Behavior::loadPageHack($parent->behavior_id);
+        }
+
+        // create the object page
+        $page = new $page_class($page, $parent);
+
+        // assign all is parts
+        $page->part = get_parts($page->id);
+
+        return $page;
+    }
+    else return false;
+}
+
+function get_parts($page_id, $cond=null)
+{
+    if($cond==null)
+        {
+            global $__FROG_CONN__;
+
+            $objPart = new stdClass;
+
+            $sql = 'SELECT name, content_html FROM '.TABLE_PREFIX.'page_part WHERE page_id=?';
+
+            if ($stmt = $__FROG_CONN__->prepare($sql))
+            {
+                $stmt->execute(array($page_id));
+
+                while ($part = $stmt->fetchObject())
+                    $objPart->{$part->name} = $part;
+           }
+
+        }
+    else
+        {
+            global $__FROG_CONN__;
+
+            $objPart = new stdClass;
+
+            $sql = 'SELECT name, content_html FROM '.TABLE_PREFIX.'page_part WHERE page_id=? AND '.$cond;
+
+            if ($stmt = $__FROG_CONN__->prepare($sql))
+            {
+                $stmt->execute(array($page_id));
+
+                while ($part = $stmt->fetchObject())
+                    $objPart->{$part->name} = $part;
+           }
+        }
+    return $objPart;
+}
+
+
+function url_match($url)
+{
+    $url = trim($url, '/');
+
+    if (CURRENT_URI == $url)
+        return true;
+
+    return false;
+}
+
+function url_start_with($url)
+{
+    $url = trim($url, '/');
+
+    if (CURRENT_URI == $url)
+        return true;
+
+    if (strpos(CURRENT_URI, $url) === 0)
+        return true;
+
+    return false;
+}
+    //-----------------------------
+    include_once(SERVER_URL."frog/app/classes/Page_Plug.php");
+    function getGroups()
+    {
+        $groups = Page_Plug::find('downloads/grupos')->children();
+        return $groups;
+    }
+
+    // Number all page parts
+    $index = 0;
+    // This page parts have multiple values/options
+    $multiple_content = array();
+    // Apply the filters after the form is replaced
+    $editor_filters = array();
+    echo('<div id="pages" class="pages">
+        <div id ="page-none" class ="page">
+            
+        </div>
+    </div>');
+    // Process all structural elements from page_part_forms defnition and create the page_part_form.
+    foreach ($structure as $name => $element) {
+    // Data from this page part
+        $structure_name_css_id = page_part_forms_name_to_id($name);
+        $page_part_id          = array_key_exists($name, $page_parts) ? $page_parts[$name]->id : null;
+        $content               = array_key_exists($name, $page_parts) ? $page_parts[$name]->content : '';
+        // Common fields from the structure
+        $limit                 = array_key_exists(PagePartFormsController::PROPERTY_LIMIT, $element) ? $element[PagePartFormsController::PROPERTY_LIMIT] : 1;
+        $title                 = $element[PagePartFormsController::PROPERTY_TITLE];
+        // Name of the field
+        $field_name_prefix     = 'part['.$index.']';
+        $field_name_content    = $field_name_prefix.'[content]';
+
+        ?>
+    
+    <div class="<?php echo $css_class_prefix; ?>row">
+        <input id="part_<?php echo $index; ?>_name" name="<?php echo $field_name_prefix; ?>[name]" type="hidden" value="<?php echo $name; ?>" />
+        <?php if ($page_part_id): ?>
+        <input id="part_<?php echo $index; ?>_id" name="<?php echo $field_name_prefix; ?>[id]" type="hidden" value="<?php echo $page_part_id; ?>" />
+    <?php endif; ?>
+        <label class="<?php echo $css_class_prefix;?>label" for="<?php echo $structure_name_css_id; ?>"><?php echo $title; ?></label>
+
+        <div class="<?php echo $css_class_prefix; ?>input">
+    <?php
+    switch($element[PagePartFormsController::PROPERTY_TYPE]) {
+        case PagePartFormsController::TYPE_PAGE_PART:
+                        $filter_id = array_key_exists($name, $page_parts) ? $page_parts[$name]->filter_id : null;
+
+                        echo '<div class="'.($css_class_prefix.'part-page-part').'">'.PHP_EOL;
+
+                        // Take care of page filters for page parts
+                        echo '<p>';
+                        echo '<label for="part_'.$index.'_filter_id">'.__('Filter').'</label>'.PHP_EOL;
+                        echo '<select id="part_'.$index.'_filter_id" name="'.$field_name_prefix.'[filter_id]" onchange="setTextAreaToolbar(\''.$structure_name_css_id.'\', this[this.selectedIndex].value)">
+           <option value=""'.(empty($filter_id) ? ' selected="selected"' : '').'>&#8212; '.__('none').' &#8212;</option>';
+                        foreach (Filter::findAll() as $filter) {
+                            echo '<option value="'.$filter.'"'. ($filter_id == $filter ? ' selected="selected"' : '') .'>';
+                            echo Inflector::humanize($filter);
+                            echo '</option>';
+                        }
+
+                        echo '</select></p>'.PHP_EOL;
+
+                        // Show the page part
+                        echo '<textarea class="textarea" id="'.$structure_name_css_id.'" name="'.$field_name_content.'" style="width: 100%" rows="20" cols="40"';
+                        echo ' onkeydown="return allowTab(event, this);" onkeyup="return allowTab(event,this);" onkeypress="return allowTab(event,this);">';
+                        echo htmlentities($content, ENT_COMPAT, 'UTF-8');
+                        echo '</textarea>';
+
+                        // Collect the filters for this editor, apply it later
+                        array_push($editor_filters, array(
+                            'textarea' => $structure_name_css_id,
+                            'filter'   => $filter_id,
+                        ));
+
+                        echo '</div>'.PHP_EOL;
+                        break;
+                    case PagePartFormsController::TYPE_TEXT:
+                        echo '<input type="text" id="'.$structure_name_css_id.'" class="'.$css_class_prefix.'part-text" name="'.$field_name_content.'" value="'.$content.'" maxlength="'.$limit.'" />';
+                        break;
+                        
+  //-------------------------------data-----------------------------------------------------
+             /*           case PagePartFormsController::TYPE_TEXT:
+                        echo '<input type="text" id="'.$structure_name_css_id.'" class="'.$css_class_prefix.'part-text" name="'.$field_name_content.'" value="'.$content.'" maxlength="'.$limit.'" />';
+                        break;*/
+  //-------------------------@data------------------------------------------------------------------
+
+  //--------------------------imagem-------------------------------------------------------------
+                    case PagePartFormsController::TYPE_IMAGE:
+
+                        $filter_id = array_key_exists($name, $page_parts) ? $page_parts[$name]->filter_id : null;
+
+
+                        echo '<div class="'.($css_class_prefix.'part-page-part').'">'.PHP_EOL;
+
+                        // Take care of page filters for page parts
+                        echo '<p style="display:none">';
+                        echo '<label for="part_'.$index.'_filter_id">'.__('Filter').'</label>'.PHP_EOL;
+                        echo '<select id="part_'.$index.'_filter_id" name="'.$field_name_prefix.'[filter_id]" onchange="setTextAreaToolbar(\''.$structure_name_css_id.'\', this[this.selectedIndex].value)">
+           <option value=""'.(empty($filter_id) ? ' selected="selected"' : '').'>&#8212; '.__('none').' &#8212;</option>';
+                        foreach (Filter::findAll() as $filter) {
+                            if($filter == "imagens") {
+                                echo '<option value="'.$filter.'"'. ("imagens" == $filter ? ' selected="selected"' : '') .'>';
+                                echo Inflector::humanize($filter);
+                                echo '</option>';
+                            }
+                        }
+
+                        echo '</select></p>'.PHP_EOL;
+                        echo'<div id="imgDiv"><fieldset id="imgListContainer">';
+                        echo apply(htmlentities($content, ENT_COMPAT, 'UTF-8'), $field_name_content);
+                        echo'</fieldset></div>';
+                        // Show the page part
+                        
+                        echo '<textarea  id="'.$structure_name_css_id.'" name="'.$field_name_content.'" style="width: 100%; font-size:10px" rows="4" cols="40">';
+                       // echo ' onkeydown="return allowTab(event, this);" onkeyup="return allowTab(event,this);" onkeypress="return allowTab(event,this);">';
+                        echo htmlentities($content, ENT_COMPAT, 'UTF-8');
+                        echo '</textarea>';
+                        echo'<span id="teste">(Arrastar Imagens para esta área.)</span>';
+
+                        // Collect the filters for this editor, apply it later
+                        array_push($editor_filters, array(
+                            'textarea' => $structure_name_css_id,
+                            'filter'   => $filter_id,
+                        ));
+
+                        echo '</div>'.PHP_EOL;
+                        break;
+
+                      case PagePartFormsController::TYPE_FILE:
+
+                        $filter_id = array_key_exists($name, $page_parts) ? $page_parts[$name]->filter_id : null;
+
+
+                        echo '<div class="'.($css_class_prefix.'part-page-part').'">'.PHP_EOL;
+
+                        // Take care of page filters for page parts
+                        echo '<p style="display:none">';
+                        echo '<label for="part_'.$index.'_filter_id">'.__('Filter').'</label>'.PHP_EOL;
+                        echo '<select id="part_'.$index.'_filter_id" name="'.$field_name_prefix.'[filter_id]" onchange="setTextAreaToolbar(\''.$structure_name_css_id.'\', this[this.selectedIndex].value)">
+           <option value=""'.(empty($filter_id) ? ' selected="selected"' : '').'>&#8212; '.__('none').' &#8212;</option>';
+                        foreach (Filter::findAll() as $filter) {
+                            if($filter == "ficheiros") {
+                                echo '<option value="'.$filter.'"'. ("ficheiros" == $filter ? ' selected="selected"' : '') .'>';
+                                echo Inflector::humanize($filter);
+                                echo '</option>';
+                            }
+                        }
+
+                        echo '</select></p>'.PHP_EOL;
+                        echo'<div id="imgDiv"><fieldset id="imgListContainer">';
+                        echo applyFile(htmlentities($content, ENT_COMPAT, 'UTF-8'), $field_name_content);
+                        echo'</fieldset></div>';
+                        // Show the page part
+
+                        echo '<textarea  id="'.$structure_name_css_id.'" name="'.$field_name_content.'" style="width: 100%; font-size:10px" rows="4" cols="40">';
+                       // echo ' onkeydown="return allowTab(event, this);" onkeyup="return allowTab(event,this);" onkeypress="return allowTab(event,this);">';
+                        echo htmlentities($content, ENT_COMPAT, 'UTF-8');
+                        echo '</textarea>';
+                        echo'<span id="teste">(Arrastar Ficheiros para esta área.)</span>';
+
+                        // Collect the filters for this editor, apply it later
+                        array_push($editor_filters, array(
+                            'textarea' => $structure_name_css_id,
+                            'filter'   => $filter_id,
+                        ));
+
+                        echo '</div>'.PHP_EOL;
+                        break;
+//---------------------------@imagem----------------------------------------------------
+
+//-------------------------------SELECT-----------------------------------------------------
+
+                    case PagePartFormsController::TYPE_SELECT:
+                        echo '<div class="'.$css_class_prefix.'select">'.PHP_EOL;
+
+                        // Get type based on limit and number of choices
+                        $expand      = false;
+                        $select_many = false;
+
+                        switch(PagePartFormsController::Get_select_type($element)) {
+                            case PagePartFormsController::SELECT_TYPE_LIST_MORE:
+                            // Same as list one but with multiple="multiple"
+                                $expand      = true;
+                                $select_many = true;
+                            case PagePartFormsController::SELECT_TYPE_LIST_ONE:
+                            // Same as dropdown but with size
+                                $expand      = true;
+                            case PagePartFormsController::SELECT_TYPE_DROPDOWN:
+                                $values = $structure[$name][PagePartFormsController::PROPERTY_VALUES];
+                                $multiple_values = PagePartFormsController::Get_multiple_values($content);
+
+                                // NOTE: Frog can only handle simple strings as values instead of arrays. Use javascript to create a string out of the selected items.
+                                if ($select_many) {
+                                    echo '<textarea style="display: none;" name="'.$field_name_content.'" rows="1" cols="1">'.$content.'</textarea>';
+                                }
+
+                                // Select widget
+                                echo '<select id="'.$structure_name_css_id.'"';
+
+                                // Show all values at once
+                                if ($expand) {
+                                    echo ' size="'.count($values).'"';
+                                }
+
+                                // Select multiple
+                                if ($select_many) {
+                                    echo ' name="'.$plugin_id.'_values_for_'.$name.'"';
+                                    echo ' multiple="multiple"';
+
+                                    // Add node information for multiple options
+                                    array_push($multiple_content, array(
+                                        'title'    => $title,
+                                        'content'  => $field_name_content,
+                                        'name'     => $name,
+                                        'limit'    => $limit,
+                                    ));
+                                }
+                                else {
+                                    echo ' name="'.$field_name_content.'"';
+                                }
+
+                                echo '>';
+
+                                // Add the values
+                                foreach ($values as $value) {
+                                    echo '<option value="'.$value.'"'.(array_key_exists($value, $multiple_values) ? 'selected="selected"' : '').'>'.$value.'</option>';
+                                }
+
+                                echo '</select>';
+                                break;
+                               case PagePartFormsController::SELECT_TYPE_RADIO:
+                                foreach ($structure[$name][PagePartFormsController::PROPERTY_VALUES] as $value) {
+                                    echo '<span class="'.$css_class_prefix.'part-radio">';
+                                    // NOTE: if changed back from many to one for this page_part, no value will be selected.
+                                    echo '<input type="radio" '.($content == $value ? 'checked="checked"' : '').' name="'.$field_name_content.'" value="'.$value.'" />'.$value;
+                                    echo '</span>'.PHP_EOL;
+                                }
+                                break;
+                            case PagePartFormsController::SELECT_TYPE_CHECKBOX:
+                                echo '<textarea style="display: none;" name="'.$field_name_content.'" rows="1" cols="1">'.$content.'</textarea>';
+
+                                $multiple_values = PagePartFormsController::Get_multiple_values($content);
+
+                                foreach ($structure[$name][PagePartFormsController::PROPERTY_VALUES] as $value) {
+                                    echo '<span class="'.$css_class_prefix.'part-checkbox">';
+                                    // NOTE: Frog can only handle simple strings as values instead of arrays. Use javascript to create a string out of the selected items
+                                    echo '<input type="checkbox" '.(array_key_exists($value, $multiple_values) ? 'checked="checked"' : '').' name="'.$plugin_id.'_values_for_'.$name.'" value="'.$value.'" />'.$value;
+                                    echo '</span>'.PHP_EOL;
+                                }
+
+                                // Add node information for multiple options
+                                array_push($multiple_content, array(
+                                    'title'   => $title,
+                                    'content' => $field_name_content,
+                                    'name'    => $name,
+                                    'limit'   => $limit,
+                                ));
+                                break;
+                        }
+                        echo '</div>';
+                        break;
+                    case PagePartFormsController::TYPE_DATE:
+                        echo '<span class="'.$css_class_prefix.'part-date">';
+                        echo '<input type="text" name="'.$field_name_content.'" size="10" maxlength="10" value="'.$content.'" />';
+                        echo '<img onclick="displayDatePicker(\''.$field_name_content.'\');" src="images/icon_cal.gif" alt="'.__('Show Calendar').'" />';
+                        echo '</span>'.PHP_EOL;
+                        break;
+
+
+                    case PagePartFormsController::TYPE_POPULATE:
+                        echo '<div class="'.$css_class_prefix.'select">'.PHP_EOL;
+
+                        // Get type based on limit and number of choices
+                        $expand      = false;
+                        $select_many = false;
+
+                        switch(PagePartFormsController::Get_select_type($element)) {
+                            case PagePartFormsController::SELECT_TYPE_LIST_MORE:
+                            // Same as list one but with multiple="multiple"
+                                $expand      = true;
+                                $select_many = true;
+                            case PagePartFormsController::SELECT_TYPE_LIST_ONE:
+                            // Same as dropdown but with size
+                                $expand      = true;
+                            case PagePartFormsController::SELECT_TYPE_DROPDOWN:
+                                $values = $structure[$name][PagePartFormsController::PROPERTY_VALUES];
+                                $multiple_values = PagePartFormsController::Get_multiple_values($content);
+
+                                // NOTE: Frog can only handle simple strings as values instead of arrays. Use javascript to create a string out of the selected items.
+                                if ($select_many) {
+                                    echo '<textarea style="display: none;" name="'.$field_name_content.'" rows="1" cols="1">'.$content.'</textarea>';
+                                }
+
+                                // Select widget
+                                echo '<select id="'.$structure_name_css_id.'"';
+
+                                // Show all values at once
+                                if ($expand) {
+                                    echo ' size="'.count($values).'"';
+                                }
+
+                                // Select multiple
+                                if ($select_many) {
+                                    echo ' name="'.$plugin_id.'_values_for_'.$name.'"';
+                                    echo ' multiple="multiple"';
+
+                                    // Add node information for multiple options
+                                    array_push($multiple_content, array(
+                                        'title'    => $title,
+                                        'content'  => $field_name_content,
+                                        'name'     => $name,
+                                        'limit'    => $limit,
+                                    ));
+                                }
+                                else {
+                                    echo ' name="'.$field_name_content.'"';
+                                }
+
+                                echo '>';
+
+                                // Add the values
+                                $groups = getGroups();
+
+                                //foreach ($values as $value) {
+                                foreach($groups as $value)
+                                {
+                                    echo '<option value="'.$value->slug.'"'.(array_key_exists($value->slug, $multiple_values) ? 'selected="selected"' : '').'>'.$value->title.'</option>';
+                                }
+
+                                echo '</select>';
+                                break;
+                             case PagePartFormsController::SELECT_TYPE_RADIO:
+                                 $groups = getGroups();
+                              //  foreach ($structure[$name][PagePartFormsController::PROPERTY_VALUES] as $value)
+                              foreach($groups as $value)
+                              {
+                                    echo '<span class="'.$css_class_prefix.'part-radio">';
+                                    // NOTE: if changed back from many to one for this page_part, no value will be selected.
+                                    echo '<input type="radio" '.($content == $value->slug ? 'checked="checked"' : '').' name="'.$field_name_content.'" value="'.$value->slug.'" />'.$value->title;
+                                    echo '</span>'.PHP_EOL;
+                                }
+                                break;
+                            case PagePartFormsController::SELECT_TYPE_CHECKBOX:
+                                echo '<textarea style="display: none;" name="'.$field_name_content.'" rows="1" cols="1">'.$content.'</textarea>';
+
+                                $multiple_values = PagePartFormsController::Get_multiple_values($content);
+
+                                foreach ($structure[$name][PagePartFormsController::PROPERTY_VALUES] as $value) {
+                                    echo '<span class="'.$css_class_prefix.'part-checkbox">';
+                                    // NOTE: Frog can only handle simple strings as values instead of arrays. Use javascript to create a string out of the selected items
+                                    echo '<input type="checkbox" '.(array_key_exists($value, $multiple_values) ? 'checked="checked"' : '').' name="'.$plugin_id.'_values_for_'.$name.'" value="'.$value.'" />'.$value;
+                                    echo '</span>'.PHP_EOL;
+                                }
+
+                                // Add node information for multiple options
+                                array_push($multiple_content, array(
+                                    'title'   => $title,
+                                    'content' => $field_name_content,
+                                    'name'    => $name,
+                                    'limit'   => $limit,
+                                ));
+                                break;
+                        }
+                }
+                ?>
+        </div> <!-- INPUT -->
+    </div> <!-- ROW -->
+                <?php $index++; } ?>
+</div>
+<script type="text/javascript">
+
+  //  triggerDrop();
+    var target;
+
+    function triggerDrop()
+    {
+        document.onmousedown = OnMouseDown;
+        document.onmouseup = OnMouseUp;
+    }
+
+    function OnMouseUp(e)
+    {
+        alert(target);
+    }
+    function OnMouseDown(e)
+    {
+        target=e.target;
+    }
+
+    function deleteImg(path, name)
+    {
+        var htm=document.getElementById('Page-part-forms-Page-Part-imagem');
+        var imgs = htm.innerHTML.split("http://");
+        if(document.all)
+        {
+             htm.innerText = "";
+        }
+        else
+        {
+            htm.textContent = "";
+        }
+        var imgList ="";
+        for(i = 0; i < imgs.length; i++)
+        {
+            var full = "http://"+imgs[i];
+            if(full!=path && full != "http://")
+              {
+                //  alert(full+path);
+                  /*  if(document.all)
+                    {
+                         htm.innerText+=full;
+                    }
+                     else
+                    {
+                        htm.textContent+=full;
+                    }*/
+                imgList+=full;
+              }
+              else
+                  {
+                      full = "";
+                  }
+          
+           
+        }
+        var newdiv = document.createElement('textarea');
+        newdiv.setAttribute('id','Page-part-forms-Page-Part-imagem');
+        newdiv.setAttribute('name',name);
+        newdiv.setAttribute('style','font-size:10px');
+        newdiv.innerHTML = imgList;
+        htm.parentNode.appendChild(newdiv);
+        htm.parentNode.removeChild(htm);
+        document.getElementById(path).parentNode.removeChild(document.getElementById(path));
+    }
+</script>
+
+<script type="text/javascript">
+    <?php
+foreach ($multiple_content as $e) {
+    echo 'multiple_content.push( {';
+    echo implode(", ", array_map("page_part_forms_dump_hash_delegate", array_keys($e), array_values($e)));
+    echo '});'.PHP_EOL;
+}
+
+foreach ($editor_filters as $e) {
+    echo 'editor_filters.push( {';
+    echo implode(", ", array_map("page_part_forms_dump_hash_delegate", array_keys($e), array_values($e)));
+    echo '});'.PHP_EOL;
+}
+?>
+</script>
